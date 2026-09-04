@@ -27,9 +27,9 @@ import java.util.Optional;
  */
 public class InscripcionDAO {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/prog2_db?useSSL=false&serverTimezone=UTC";
+    private static final String URL = "jdbc:mysql://localhost:3307/prog2_db?useSSL=false&serverTimezone=UTC";
     private static final String USUARIO = "root";
-    private static final String PASSWORD = "TU_CONTRASEÑA";
+    private static final String PASSWORD = "Mateo1h";
 
     /**
      * Inscribe a un estudiante en un curso. Retorna el id generado.
@@ -73,8 +73,18 @@ public class InscripcionDAO {
      *    EstudianteDAO.actualizarNombre en la Clase 5).
      */
     public boolean registrarNota(int estudianteId, int cursoId, double nota) throws SQLException {
-        // TODO: completar.
-        return false;
+        String sql = "UPDATE inscripciones SET nota = ? WHERE estudiante_id = ? AND curso_id = ?";
+
+        try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+             PreparedStatement statement = conexion.prepareStatement(sql)) {
+
+            statement.setDouble(1, nota);
+            statement.setInt(2, estudianteId);
+            statement.setInt(3, cursoId);
+
+            int filasAfectadas = statement.executeUpdate();
+            return filasAfectadas > 0;
+        }
     }
 
     /**
