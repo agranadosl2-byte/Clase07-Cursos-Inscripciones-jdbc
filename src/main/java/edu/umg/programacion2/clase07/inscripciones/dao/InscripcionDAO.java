@@ -52,25 +52,35 @@ public class InscripcionDAO {
 	public int inscribir(int estudianteId, int cursoId) throws SQLException {
 		// TODO: completar (ver pistas arriba). Recuerda el catch especifico
 		// para inscripciones duplicadas antes del catch general.
-
 		return -1;
 	}
 
 	/**
 	 * Registra (o actualiza) la nota de un estudiante en un curso.
 	 *
-	 * Ejemplo: registrarNota(3, 3, 88.0) le pone 88.0 a la inscripcion de Maria
-	 * Gonzalez (id 3) en Matematica Discreta (id 3), que en los datos de ejemplo
-	 * esta con nota NULL.
+	 * Ejemplo: registrarNota(3, 3, 88.0) le pone 88.0 a la inscripcion de
+	 * Maria Gonzalez (id 3) en Matematica Discreta (id 3), que en los datos
+	 * de ejemplo esta con nota NULL.
 	 *
-	 * Pistas: 1. UPDATE inscripciones SET nota = ? WHERE estudiante_id = ? AND
-	 * curso_id = ? 2. Retorna true si executeUpdate() afecto al menos una fila,
-	 * false si esa pareja estudiante/curso no existe (mismo patron de
-	 * EstudianteDAO.actualizarNombre en la Clase 5).
+	 * Pistas:
+	 * 1. UPDATE inscripciones SET nota = ? WHERE estudiante_id = ? AND curso_id = ?
+	 * 2. Retorna true si executeUpdate() afecto al menos una fila, false si
+	 *    esa pareja estudiante/curso no existe (mismo patron de
+	 *    EstudianteDAO.actualizarNombre en la Clase 5).
 	 */
 	public boolean registrarNota(int estudianteId, int cursoId, double nota) throws SQLException {
-		// TODO: completar.
-		return false;
+		String sql = "UPDATE inscripciones SET nota = ? WHERE estudiante_id = ? AND curso_id = ?";
+
+		try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+			 PreparedStatement statement = conexion.prepareStatement(sql)) {
+
+			statement.setDouble(1, nota);
+			statement.setInt(2, estudianteId);
+			statement.setInt(3, cursoId);
+
+			int filasAfectadas = statement.executeUpdate();
+			return filasAfectadas > 0;
+		}
 	}
 
 	/**
@@ -227,20 +237,41 @@ public class InscripcionDAO {
 	/**
 	 * Encuentra el nombre del curso con mas estudiantes inscritos.
 	 *
-	 * Ejemplo: con los datos de sql/schema.sql, "Programacion 2" tiene 3 inscritos
-	 * (Ana, Carlos, Maria) y es el que mas tiene.
+	 * Ejemplo: con los datos de sql/schema.sql, "Programacion 2" tiene 3
+	 * inscritos (Ana, Carlos, Maria) y es el que mas tiene.
 	 *
-	 * Pistas: 1. Otra consulta de agregacion, esta vez con GROUP BY: SELECT
-	 * c.nombre, COUNT(*) AS total FROM inscripciones i JOIN cursos c ON i.curso_id
-	 * = c.id GROUP BY c.nombre ORDER BY total DESC LIMIT 1 2. GROUP BY agrupa las
-	 * filas por curso antes de contar; sin GROUP BY, COUNT(*) contaria TODAS las
-	 * inscripciones juntas, sin separar por curso. 3. Con LIMIT 1 le pides a MySQL
-	 * que ya te de solo el primero (el mas inscrito); no necesitas traer todos y
-	 * comparar en Java. 4. Si no hay ninguna inscripcion todavia, el ResultSet
-	 * viene vacio: retorna Optional.empty() en ese caso.
+	 * Pistas:
+	 * 1. Otra consulta de agregacion, esta vez con GROUP BY:
+	 *      SELECT c.nombre, COUNT(*) AS total
+	 *      FROM inscripciones i
+	 *      JOIN cursos c ON i.curso_id = c.id
+	 *      GROUP BY c.nombre
+	 *      ORDER BY total DESC
+	 *      LIMIT 1
+	 * 2. GROUP BY agrupa las filas por curso antes de contar; sin GROUP BY,
+	 *    COUNT(*) contaria TODAS las inscripciones juntas, sin separar por
+	 *    curso.
+	 * 3. Con LIMIT 1 le pides a MySQL que ya te de solo el primero (el mas
+	 *    inscrito); no necesitas traer todos y comparar en Java.
+	 * 4. Si no hay ninguna inscripcion todavia, el ResultSet viene vacio:
+	 *    retorna Optional.empty() en ese caso.
 	 */
 	public Optional<String> cursoConMasInscritos() throws SQLException {
-		// TODO: completar (ver pistas arriba).
+		String sql = "SELECT c.nombre, COUNT(*) AS total " +
+					 "FROM inscripciones i " +
+					 "JOIN cursos c ON i.curso_id = c.id " +
+					 "GROUP BY c.nombre " +
+					 "ORDER BY total DESC " +
+					 "LIMIT 1";
+
+		try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+			 PreparedStatement statement = conexion.prepareStatement(sql);
+			 ResultSet rs = statement.executeQuery()) {
+
+			if (rs.next()) {
+				return Optional.of(rs.getString("nombre"));
+			}
+		}
 		return Optional.empty();
 	}
 }
