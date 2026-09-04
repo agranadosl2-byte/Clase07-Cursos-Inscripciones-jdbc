@@ -20,7 +20,7 @@ public class CursoDAO {
 
     private static final String URL = "jdbc:mysql://localhost:3307/prog2_db?useSSL=false&serverTimezone=UTC";
     private static final String USUARIO = "root";
-    private static final String PASSWORD = "Mateo1h";
+    private static final String PASSWORD = "Cambia_esta_contraseña";
 
     public int crear(Curso curso) throws SQLException {
         String sql = "INSERT INTO cursos (nombre, creditos) VALUES (?, ?)";

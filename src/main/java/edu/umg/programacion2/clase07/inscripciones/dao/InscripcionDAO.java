@@ -29,7 +29,7 @@ public class InscripcionDAO {
 
     private static final String URL = "jdbc:mysql://localhost:3307/prog2_db?useSSL=false&serverTimezone=UTC";
     private static final String USUARIO = "root";
-    private static final String PASSWORD = "Mateo1h";
+    private static final String PASSWORD = "Cambia_esta_contraseña";
 
     /**
      * Inscribe a un estudiante en un curso. Retorna el id generado.
@@ -178,7 +178,22 @@ public class InscripcionDAO {
      *    retorna Optional.empty() en ese caso.
      */
     public Optional<String> cursoConMasInscritos() throws SQLException {
-        // TODO: completar (ver pistas arriba).
+        String sql = "SELECT c.nombre, COUNT(*) AS total " +
+                     "FROM inscripciones i " +
+                     "JOIN cursos c ON i.curso_id = c.id " +
+                     "GROUP BY c.nombre " +
+                     "ORDER BY total DESC " +
+                     "LIMIT 1";
+
+        try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+             PreparedStatement statement = conexion.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+
+            if (rs.next()) {
+                return Optional.of(rs.getString("nombre"));
+            }
+        }
+
         return Optional.empty();
     }
-}
+	}
