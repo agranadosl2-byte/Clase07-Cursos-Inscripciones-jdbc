@@ -74,33 +74,62 @@ public class InscripcionDAO {
 	}
 
 	/**
-     * Lista los cursos en los que esta inscrito un estudiante, dado su
-     * carnet.
-     *
-     * Ejemplo: listarCursosDeEstudiante("2024001") (Ana Lopez) devuelve
-     * Programacion 2 y Base de Datos 1 (en los datos de ejemplo).
-     *
-     * Pistas:
-     * 1. Necesitas un JOIN de TRES tablas:
-     *      SELECT c.id, c.nombre, c.creditos
-     *      FROM inscripciones i
-     *      JOIN cursos c ON i.curso_id = c.id
-     *      JOIN estudiantes e ON i.estudiante_id = e.id
-     *      WHERE e.carnet = ?
-     * 2. Mira PrestamoDAO.listarPrestamosActivosConLibro() en
-     *    clase07-biblioteca-jdbc si necesitas repasar como se mapea un
-     *    ResultSet que viene de un JOIN.
-     */
-    public List<Curso> listarCursosDeEstudiante(String carnet) throws SQLException {
-        List<Curso> resultado = new ArrayList<>();
+	 * Lista los cursos en los que esta inscrito un estudiante, dado su
+	 * carnet.
+	 *
+	 * Ejemplo: listarCursosDeEstudiante("2024001") (Ana Lopez) devuelve
+	 * Programacion 2 y Base de Datos 1 (en los datos de ejemplo).
+	 *
+	 * Pistas:
+	 * 1. Necesitas un JOIN de TRES tablas:
+	 *      SELECT c.id, c.nombre, c.creditos
+	 *      FROM inscripciones i
+	 *      JOIN cursos c ON i.curso_id = c.id
+	 *      JOIN estudiantes e ON i.estudiante_id = e.id
+	 *      WHERE e.carnet = ?
+	 * 2. Mira PrestamoDAO.listarPrestamosActivosConLibro() en
+	 *    clase07-biblioteca-jdbc si necesitas repasar como se mapea un
+	 *    ResultSet que viene de un JOIN.
+	 */
+	public List<Curso> listarCursosDeEstudiante(String carnet) throws SQLException {
+		List<Curso> resultado = new ArrayList<>();
+		
+		/* Esta es la consulta a la BD. Como la relación es de muchos a muchos,
+		 me toca juntar la tabla de inscripciones, la de cursos y la de estudiantes
+		 para buscar únicamente los cursos que le pertenecen al carnet que me manden.*/
+		String sql = "SELECT c.id, c.nombre, c.creditos " +
+					 "FROM inscripciones i " +
+					 "JOIN cursos c ON i.curso_id = c.id " +
+					 "JOIN estudiantes e ON i.estudiante_id = e.id " +
+					 "WHERE e.carnet = ?";
 
-        	return resultado;	
-        	}
-    
-    	
-    
-        // TODO: completar (ver pista del JOIN de 3 tablas arriba).
-        
+		/* Abro la conexión con la BD y preparo la consulta. 
+		 Lo meto dentro del try() para que Java cierre la conexión solito y no se quede abierta.*/
+		try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+			 PreparedStatement stmt = conexion.prepareStatement(sql)) {
+
+			/* Cambio el signo '?' de la consulta por el carnet real que me pasaron por parámetro*/
+			stmt.setString(1, carnet);
+			
+			/* Ejecuto la consulta y guardo lo que me devuelve la BD en 'rs'*/
+			try (ResultSet rs = stmt.executeQuery()) {
+				
+				/* Voy recorriendo los datos fila por fila*/
+				while (rs.next()) {
+					/* Saco los datos de la fila actual*/
+					int id = rs.getInt("id");
+					String nombre = rs.getString("nombre");
+					int creditos = rs.getInt("creditos");
+
+					/* Creo el objeto Curso con esos datos y lo meto a la lista*/
+					resultado.add(new Curso(id, nombre, creditos));
+				}
+			}
+		}
+
+		/*Y listo, devuelvo la lista ya llena con los cursos*/
+		return resultado;
+	}
 
 	/**
 	 * Lista los estudiantes inscritos en un curso, dado su nombre.
@@ -113,43 +142,38 @@ public class InscripcionDAO {
 	 */
 	public List<Estudiante> listarEstudiantesDeCurso(String nombreCurso) throws SQLException {
 		List<Estudiante> resultado = new ArrayList<>();
-		// TODO: completar.
 		
-	      //La consulta SQL: Unimos las tres tablas para llegar de "cursos" a "estudiantes"
-        String sql = "SELECT e.id, e.nombre, e.carnet" + 
-        "FROM inscripciones i" + "JOIN estudiantes e ON i.estudiantes_id = e.id" +
-        "JOIN cursos c ON i.cursos_id = c.id" + "WHERE c.nombre = ?";
-        
-        //try-with-resources: Conecta a la base de datos de forma segura
-        try (Connection conn = DriverManager.getConnection(URL, USUARIO, PASSWORD);
-        		PreparedStatement pstmt = conn.prepareStatement(sql) ){
-        	
-        //Reemplazamos el signo de interrogación (?) por el nombre del curso que recibe el método
-        pstmt.setString(1, nombreCurso);
-        
-        //Ejecutamos la consulta y recibimos los datos en el ResultSet
-        try (ResultSet rs = pstmt.executeQuery()){
-        	
-        	
-        	//El bucle while recorre cada fila (cada estudiante) que devolvió la base de datos
-        	while(rs.next()) {
-        		
-        		Estudiante est = new Estudiante(
-        				rs.getInt("id"),
-        				rs.getString("nombre"),
-        				rs.getString("carnet"));
-        		
-        		// Añadimos el estudiante a nuestra lista final
-        		resultado.add(est);
-        	}
-        }
-        	
-        }
-
-        return resultado;
-    }
-
-	
+		//La consulta SQL: Unimos las tres tablas para llegar de "cursos" a "estudiantes"
+		String sql = "SELECT e.id, e.nombre, e.carnet " + 
+					 "FROM inscripciones i " + 
+					 "JOIN estudiantes e ON i.estudiante_id = e.id " +
+					 "JOIN cursos c ON i.curso_id = c.id " + 
+					 "WHERE c.nombre = ?";
+		
+		//try-with-resources: Conecta a la base de datos de forma segura
+		try (Connection conn = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+			 PreparedStatement pstmt = conn.prepareStatement(sql) ){
+			
+			//Reemplazamos el signo de interrogación (?) por el nombre del curso que recibe el método
+			pstmt.setString(1, nombreCurso);
+			
+			//Ejecutamos la consulta y recibimos los datos en el ResultSet
+			try (ResultSet rs = pstmt.executeQuery()){
+				
+				//El bucle while recorre cada fila (cada estudiante) que devolvió la base de datos
+				while(rs.next()) {
+					Estudiante est = new Estudiante(
+							rs.getInt("id"),
+							rs.getString("nombre"),
+							rs.getString("carnet"));
+					
+					// Añadimos el estudiante a nuestra lista final
+					resultado.add(est);
+				}
+			}
+		}
+		return resultado;
+	}
 
 	/**
 	 * Calcula el promedio de notas de un estudiante (solo cursos que YA tienen nota
@@ -168,16 +192,15 @@ public class InscripcionDAO {
 	 * despues de getDouble) antes de retornar Optional.empty().
 	 */
 	public Optional<Double> promedioDeEstudiante(String carnet) throws SQLException {
-		// TODO: completar (ver pistas arriba, especialmente el caso NULL).
-		
 		//Preparamos la consulta sql con la funcion AVG (Average = Promedio)
+		String sql = "SELECT AVG(i.nota) AS PROMEDIO " + 
+					 "FROM inscripciones i " + 
+					 "JOIN estudiantes e ON i.estudiante_id = e.id " + 
+					 "WHERE e.carnet = ?";
 		
-		String sql = "SELECT AVG(i.nota) AS PROMEDIO" + "FROM inscripciones i" + "JOIN estudiantes e ON iestudiantes_id = e.id" + "WHERE e.carnet = ? ";
-		
-		//Conectamos la base de datos de forma segura con (try-whith-resources )
-		
+		//Conectamos la base de datos de forma segura con (try-with-resources )
 		try(Connection conn = DriverManager.getConnection(URL, USUARIO, PASSWORD);
-				PreparedStatement pstmt= conn.prepareStatement(sql)){
+			PreparedStatement pstmt= conn.prepareStatement(sql)){
 			
 			//Remplazamos el ? por el carnet que nos pasaran
 			pstmt.setString(1, carnet);
@@ -187,23 +210,16 @@ public class InscripcionDAO {
 				
 				//nos movemos a la primera y unica fila del resultado
 				if(rs.next()) {
-					
 					//extraemos el numero de la columna "promedio"
 					double promedio = rs.getDouble("promedio");
 					
 					//Verificamos si realmente habia un promedio o era null
 					if(!rs.wasNull()) {
-						
 						//Si NO era nulo, devolvemos el promedio envuelto en el Optional
 						return Optional.of(promedio);
 					}
-					
-					
 				}
-				
 			}
-			
-			
 		}
 		return Optional.empty();
 	}
