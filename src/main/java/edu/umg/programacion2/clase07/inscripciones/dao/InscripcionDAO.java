@@ -96,12 +96,45 @@ public class InscripcionDAO {
      *    ResultSet que viene de un JOIN.
      */
     public List<Curso> listarCursosDeEstudiante(String carnet) throws SQLException {
+        /* Aquí creo una lista vacía para ir metiendo los cursos que encuentre en la BD*/
         List<Curso> resultado = new ArrayList<>();
-        // TODO: completar (ver pista del JOIN de 3 tablas arriba).
+        
+        /* Esta es la consulta a la BD. Como la relación es de muchos a muchos,
+         me toca juntar la tabla de inscripciones, la de cursos y la de estudiantes
+         para buscar únicamente los cursos que le pertenecen al carnet que me manden.*/
+        String sql = "SELECT c.id, c.nombre, c.creditos " +
+                     "FROM inscripciones i " +
+                     "JOIN cursos c ON i.curso_id = c.id " +
+                     "JOIN estudiantes e ON i.estudiante_id = e.id " +
+                     "WHERE e.carnet = ?";
 
+        /* Abro la conexión con la BD y preparo la consulta. 
+        Lo meto dentro del try() para que Java cierre la conexión solito y no se quede abierta.*/
+        try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+
+            /* Cambio el signo '?' de la consulta por el carnet real que me pasaron por parámetro*/
+            stmt.setString(1, carnet);
+            
+            /* Ejecuto la consulta y guardo lo que me devuelve la BD en 'rs'*/
+            try (ResultSet rs = stmt.executeQuery()) {
+                
+                /* Voy recorriendo los datos fila por fila*/
+                while (rs.next()) {
+                    /* Saco los datos de la fila actual*/
+                    int id = rs.getInt("id");
+                    String nombre = rs.getString("nombre");
+                    int creditos = rs.getInt("creditos");
+
+                    /* Creo el objeto Curso con esos datos y lo meto a la lista*/
+                    resultado.add(new Curso(id, nombre, creditos));
+                }
+            }
+        }
+
+        /*Y listo, devuelvo la lista ya llena con los cursos*/
         return resultado;
     }
-
     /**
      * Lista los estudiantes inscritos en un curso, dado su nombre.
      *
